@@ -1,0 +1,24 @@
+{
+  "total_samples": 600,
+  "class_distribution": {
+    "genuine": 300,
+    "fake": 300
+  },
+  "fraud_typologies": {
+    "gpa_tampering": 56,
+    "attendance_edit": 50,
+    "department_change": 40,
+    "name_change": 40,
+    "id_duplication": 40,
+    "photo_swap": 39,
+    "grade_modification": 35
+  },
+  "split_distribution": {
+    "train": 420,
+    "test": 90,
+    "val": 90
+  },
+  "corrupted_images": 0,
+  "missing_masks": 0,
+  "mean_tampered_pixels": 7178.056666666666
+}

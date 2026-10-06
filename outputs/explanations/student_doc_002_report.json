@@ -1,0 +1,36 @@
+{
+  "file": "student_doc_002.png",
+  "decision": "GENUINE / AUTHENTIC",
+  "forgery_probability": 0.228,
+  "confidence": 77.2,
+  "detected_tampering_regions_count": 0,
+  "bounding_boxes": [],
+  "top_contributing_features_shap": [
+    {
+      "feature": "lbp_r1_bin8",
+      "shap_value": -0.07317620694589988,
+      "feature_value": 0.2444690465927124
+    },
+    {
+      "feature": "lbp_r2_bin8",
+      "shap_value": -0.07192948201240722,
+      "feature_value": 0.22971667349338531
+    },
+    {
+      "feature": "ela_skew",
+      "shap_value": -0.06616088731329794,
+      "feature_value": 0.14508439600467682
+    },
+    {
+      "feature": "lbp_r3_bin8",
+      "shap_value": -0.04566238821279728,
+      "feature_value": 0.19085833430290222
+    },
+    {
+      "feature": "ela_mean",
+      "shap_value": -0.03153048169628479,
+      "feature_value": 2.194312334060669
+    }
+  ],
+  "counterfactual_analysis": "Document is classified as authentic (4.0% forgery probability). No counterfactual feature perturbation required to reach authenticity threshold."
+}

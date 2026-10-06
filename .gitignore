@@ -1,0 +1,14 @@
+
+.venv/
+__pycache__/
+*.pyc
+.ipynb_checkpoints/
+output/
+outputs/models/*.pth
+data/raw/
+data/processed/images/
+data/processed/masks/
+models/*.pth
+models/*.h5
+models/*.pkl
+

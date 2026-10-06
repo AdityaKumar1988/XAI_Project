@@ -1,0 +1,43 @@
+{
+  "file": "student_doc_304.png",
+  "decision": "FORGED / TAMPERED",
+  "forgery_probability": 0.9398,
+  "confidence": 93.98,
+  "detected_tampering_regions_count": 1,
+  "bounding_boxes": [
+    [
+      315,
+      556,
+      110,
+      101
+    ]
+  ],
+  "top_contributing_features_shap": [
+    {
+      "feature": "lbp_r2_bin8",
+      "shap_value": 0.09296464060298977,
+      "feature_value": 0.23501785099506378
+    },
+    {
+      "feature": "ela_skew",
+      "shap_value": 0.08860140385205612,
+      "feature_value": 0.1337532103061676
+    },
+    {
+      "feature": "lbp_r1_bin8",
+      "shap_value": 0.082801108634616,
+      "feature_value": 0.24965238571166992
+    },
+    {
+      "feature": "lbp_r3_bin8",
+      "shap_value": 0.05882697448260406,
+      "feature_value": 0.1951357126235962
+    },
+    {
+      "feature": "lbp_r2_bin9",
+      "shap_value": 0.036428275425772455,
+      "feature_value": 0.3492654860019684
+    }
+  ],
+  "counterfactual_analysis": "Reducing 9 suspicious anomaly features drops forgery probability from 99.0% to 59.0% (AUTHENTIC)."
+}

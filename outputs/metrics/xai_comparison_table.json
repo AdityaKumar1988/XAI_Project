@@ -1,0 +1,42 @@
+[
+  {
+    "method": "Grad-CAM",
+    "deletion_auc": 0.9254,
+    "insertion_auc": 0.3588,
+    "localization_iou": 0.0,
+    "localization_dice": 0.0,
+    "stability_pearson": 0.9581,
+    "gini_sparsity": 0.6914,
+    "avg_latency_ms": 690.1
+  },
+  {
+    "method": "Grad-CAM++",
+    "deletion_auc": 0.9254,
+    "insertion_auc": 0.3705,
+    "localization_iou": 0.0,
+    "localization_dice": 0.0,
+    "stability_pearson": 0.9619,
+    "gini_sparsity": 0.663,
+    "avg_latency_ms": 535.8
+  },
+  {
+    "method": "Integrated Gradients",
+    "deletion_auc": 0.9001,
+    "insertion_auc": 0.4651,
+    "localization_iou": 0.0,
+    "localization_dice": 0.0,
+    "stability_pearson": 0.3145,
+    "gini_sparsity": 0.5481,
+    "avg_latency_ms": 6284.2
+  },
+  {
+    "method": "Occlusion",
+    "deletion_auc": 0.9254,
+    "insertion_auc": 0.5699,
+    "localization_iou": 0.0,
+    "localization_dice": 0.0,
+    "stability_pearson": 1.0,
+    "gini_sparsity": 0.1216,
+    "avg_latency_ms": 10302.8
+  }
+]
