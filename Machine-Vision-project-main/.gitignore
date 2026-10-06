@@ -1,0 +1,26 @@
+# Byte-compiled / optimized / DLL files
+__pycache__/
+*.py[cod]
+*$py.class
+
+# Environments
+.venv/
+venv/
+ENV/
+
+# Models and Large Files (Keep these local)
+models/
+*.h5
+*.pkl
+*.zip
+
+# Dataset (Usually too large for GitHub)
+dataset/
+Certificate-forgery-detection-1/
+
+# Outputs
+output/
+result.jpg
+
+# OS generated files
+.DS_Store
