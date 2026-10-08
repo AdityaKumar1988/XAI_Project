@@ -30,7 +30,207 @@
       "feature": "ela_mean",
       "shap_value": -0.03153048169628479,
       "feature_value": 2.194312334060669
+    },
+    {
+      "feature": "lbp_r3_bin9",
+      "shap_value": -0.02666777354257977,
+      "feature_value": 0.3973392844200134
     }
   ],
-  "counterfactual_analysis": "Document is classified as authentic (4.0% forgery probability). No counterfactual feature perturbation required to reach authenticity threshold."
+  "counterfactual_analysis": "Document is classified as authentic (4.0% forgery probability). No counterfactual feature perturbation required to reach authenticity threshold.",
+  "feature_counterfactual": {
+    "status": "already_target",
+    "original_prob": 0.04,
+    "counterfactual_prob": 0.04,
+    "perturbations": [],
+    "explanation": "Document is classified as authentic (4.0% forgery probability). No counterfactual feature perturbation required to reach authenticity threshold."
+  },
+  "forensic_explanation": {
+    "overall_evidence": "Extracted micro-texture and compression-residual features align with expected authentic document distributions, exhibiting negative attribution toward forgery and confirming absence of tampering.",
+    "signals_table": [
+      {
+        "feature": "lbp_r1_bin8",
+        "shap_contribution": -0.073176,
+        "shap_formatted": "-0.0732",
+        "observed_value": 0.2445,
+        "observed_formatted": "0.2445",
+        "human_readable": "Local texture inconsistency",
+        "category": "Local Texture (LBP)",
+        "detailed": "Micro-texture distribution irregularity (scale R=1, bin 8) capturing paper grain, printer dithering, or patch boundary mismatch.",
+        "direction": "Pushes toward Authentic (Negative evidence)"
+      },
+      {
+        "feature": "lbp_r2_bin8",
+        "shap_contribution": -0.071929,
+        "shap_formatted": "-0.0719",
+        "observed_value": 0.2297,
+        "observed_formatted": "0.2297",
+        "human_readable": "Local texture inconsistency",
+        "category": "Local Texture (LBP)",
+        "detailed": "Micro-texture distribution irregularity (scale R=2, bin 8) capturing paper grain, printer dithering, or patch boundary mismatch.",
+        "direction": "Pushes toward Authentic (Negative evidence)"
+      },
+      {
+        "feature": "ela_skew",
+        "shap_contribution": -0.066161,
+        "shap_formatted": "-0.0662",
+        "observed_value": 0.1451,
+        "observed_formatted": "0.1451",
+        "human_readable": "Error-level/compression residual anomaly",
+        "category": "Error Level Analysis (ELA)",
+        "detailed": "JPEG re-compression error discrepancy (residual distribution skewness) indicating multiple save cycles or differential compression.",
+        "direction": "Pushes toward Authentic (Negative evidence)"
+      },
+      {
+        "feature": "lbp_r3_bin8",
+        "shap_contribution": -0.045662,
+        "shap_formatted": "-0.0457",
+        "observed_value": 0.1909,
+        "observed_formatted": "0.1909",
+        "human_readable": "Local texture inconsistency",
+        "category": "Local Texture (LBP)",
+        "detailed": "Micro-texture distribution irregularity (scale R=3, bin 8) capturing paper grain, printer dithering, or patch boundary mismatch.",
+        "direction": "Pushes toward Authentic (Negative evidence)"
+      },
+      {
+        "feature": "ela_mean",
+        "shap_contribution": -0.03153,
+        "shap_formatted": "-0.0315",
+        "observed_value": 2.1943,
+        "observed_formatted": "2.1943",
+        "human_readable": "Error-level/compression residual anomaly",
+        "category": "Error Level Analysis (ELA)",
+        "detailed": "JPEG re-compression error discrepancy (average residual error) indicating multiple save cycles or differential compression.",
+        "direction": "Pushes toward Authentic (Negative evidence)"
+      },
+      {
+        "feature": "lbp_r3_bin9",
+        "shap_contribution": -0.026668,
+        "shap_formatted": "-0.0267",
+        "observed_value": 0.3973,
+        "observed_formatted": "0.3973",
+        "human_readable": "Local texture inconsistency",
+        "category": "Local Texture (LBP)",
+        "detailed": "Micro-texture distribution irregularity (scale R=3, bin 9) capturing paper grain, printer dithering, or patch boundary mismatch.",
+        "direction": "Pushes toward Authentic (Negative evidence)"
+      }
+    ],
+    "overlap_info": {
+      "has_overlap": false,
+      "overlap_ratio": 0.0,
+      "max_cam_in_box": 0.0,
+      "mean_cam_in_box": 0.0,
+      "global_cam_mean": 0.042388685047626495,
+      "statement": "No suspicious tampering regions were detected; visual attributions indicate uniform baseline document examination.",
+      "details": "Absence of localized anomaly clusters across both gradient heatmaps and segmentation mask."
+    },
+    "forensic_summary": "AUTHENTIC because the document exhibits consistent forensic characteristics. Micro-texture (LBP) and compression residual (ELA) statistics align with authentic document baselines, and no localized tampering regions were detected across the canvas.",
+    "counterfactual_details": {
+      "active_model_probability": 22.8,
+      "counterfactual_probability_before": 4.0,
+      "counterfactual_probability_after": 4.0,
+      "features_involved_count": 0,
+      "perturbations": [],
+      "narrative": "Document is currently classified as authentic (22.8% forgery probability). No counterfactual feature reduction is required to satisfy the authenticity boundary."
+    },
+    "primary_evidence_items": [
+      "Uniform local texture statistics consistent with authentic substrate",
+      "Error-level compression residual statistics within normal single-save baseline",
+      "Absence of high-frequency edge discontinuities along text boundaries",
+      "Zero suspicious localized tampering clusters detected"
+    ],
+    "important_limitation": "Important limitation:\nThis system detects forensic inconsistencies associated with document tampering. It does not independently prove which exact textual field was altered unless supported by additional OCR/content-comparison evidence.",
+    "answers": {
+      "why_verdict": "AUTHENTIC because the document exhibits consistent forensic characteristics. Micro-texture (LBP) and compression residual (ELA) statistics align with authentic document baselines, and no localized tampering regions were detected across the canvas.",
+      "contributing_characteristics": [
+        {
+          "feature": "lbp_r1_bin8",
+          "shap_contribution": -0.073176,
+          "shap_formatted": "-0.0732",
+          "observed_value": 0.2445,
+          "observed_formatted": "0.2445",
+          "human_readable": "Local texture inconsistency",
+          "category": "Local Texture (LBP)",
+          "detailed": "Micro-texture distribution irregularity (scale R=1, bin 8) capturing paper grain, printer dithering, or patch boundary mismatch.",
+          "direction": "Pushes toward Authentic (Negative evidence)"
+        },
+        {
+          "feature": "lbp_r2_bin8",
+          "shap_contribution": -0.071929,
+          "shap_formatted": "-0.0719",
+          "observed_value": 0.2297,
+          "observed_formatted": "0.2297",
+          "human_readable": "Local texture inconsistency",
+          "category": "Local Texture (LBP)",
+          "detailed": "Micro-texture distribution irregularity (scale R=2, bin 8) capturing paper grain, printer dithering, or patch boundary mismatch.",
+          "direction": "Pushes toward Authentic (Negative evidence)"
+        },
+        {
+          "feature": "ela_skew",
+          "shap_contribution": -0.066161,
+          "shap_formatted": "-0.0662",
+          "observed_value": 0.1451,
+          "observed_formatted": "0.1451",
+          "human_readable": "Error-level/compression residual anomaly",
+          "category": "Error Level Analysis (ELA)",
+          "detailed": "JPEG re-compression error discrepancy (residual distribution skewness) indicating multiple save cycles or differential compression.",
+          "direction": "Pushes toward Authentic (Negative evidence)"
+        },
+        {
+          "feature": "lbp_r3_bin8",
+          "shap_contribution": -0.045662,
+          "shap_formatted": "-0.0457",
+          "observed_value": 0.1909,
+          "observed_formatted": "0.1909",
+          "human_readable": "Local texture inconsistency",
+          "category": "Local Texture (LBP)",
+          "detailed": "Micro-texture distribution irregularity (scale R=3, bin 8) capturing paper grain, printer dithering, or patch boundary mismatch.",
+          "direction": "Pushes toward Authentic (Negative evidence)"
+        },
+        {
+          "feature": "ela_mean",
+          "shap_contribution": -0.03153,
+          "shap_formatted": "-0.0315",
+          "observed_value": 2.1943,
+          "observed_formatted": "2.1943",
+          "human_readable": "Error-level/compression residual anomaly",
+          "category": "Error Level Analysis (ELA)",
+          "detailed": "JPEG re-compression error discrepancy (average residual error) indicating multiple save cycles or differential compression.",
+          "direction": "Pushes toward Authentic (Negative evidence)"
+        },
+        {
+          "feature": "lbp_r3_bin9",
+          "shap_contribution": -0.026668,
+          "shap_formatted": "-0.0267",
+          "observed_value": 0.3973,
+          "observed_formatted": "0.3973",
+          "human_readable": "Local texture inconsistency",
+          "category": "Local Texture (LBP)",
+          "detailed": "Micro-texture distribution irregularity (scale R=3, bin 9) capturing paper grain, printer dithering, or patch boundary mismatch.",
+          "direction": "Pushes toward Authentic (Negative evidence)"
+        }
+      ],
+      "evidence_location": {
+        "statement": "No suspicious tampering regions were detected; visual attributions indicate uniform baseline document examination.",
+        "details": "Absence of localized anomaly clusters across both gradient heatmaps and segmentation mask.",
+        "bounding_boxes": [],
+        "region_count": 0
+      },
+      "counterfactual_changes": {
+        "active_model_probability": 22.8,
+        "counterfactual_probability_before": 4.0,
+        "counterfactual_probability_after": 4.0,
+        "features_involved_count": 0,
+        "perturbations": [],
+        "narrative": "Document is currently classified as authentic (22.8% forgery probability). No counterfactual feature reduction is required to satisfy the authenticity boundary."
+      },
+      "scope_and_limitations": {
+        "can_conclude": "Physical tampering anomalies, micro-texture discrepancies, and localized compression residual shifts.",
+        "cannot_conclude": "Specific textual or semantic field identity (e.g. which student grade, name, or GPA was altered) without independent OCR verification.",
+        "disclaimer": "Important limitation:\nThis system detects forensic inconsistencies associated with document tampering. It does not independently prove which exact textual field was altered unless supported by additional OCR/content-comparison evidence."
+      }
+    }
+  },
+  "forensic_summary": "AUTHENTIC because the document exhibits consistent forensic characteristics. Micro-texture (LBP) and compression residual (ELA) statistics align with authentic document baselines, and no localized tampering regions were detected across the canvas.",
+  "overall_evidence": "Extracted micro-texture and compression-residual features align with expected authentic document distributions, exhibiting negative attribution toward forgery and confirming absence of tampering."
 }

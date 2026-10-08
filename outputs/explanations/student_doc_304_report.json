@@ -37,7 +37,397 @@
       "feature": "lbp_r2_bin9",
       "shap_value": 0.036428275425772455,
       "feature_value": 0.3492654860019684
+    },
+    {
+      "feature": "ela_mean",
+      "shap_value": 0.03283133010549859,
+      "feature_value": 2.1799604892730713
     }
   ],
-  "counterfactual_analysis": "Reducing 9 suspicious anomaly features drops forgery probability from 99.0% to 59.0% (AUTHENTIC)."
+  "counterfactual_analysis": "Reducing 9 suspicious anomaly features drops forgery probability from 99.0% to 59.0% (AUTHENTIC).",
+  "feature_counterfactual": {
+    "status": "partial",
+    "original_prob": 0.99,
+    "counterfactual_prob": 0.59,
+    "perturbations": [
+      {
+        "feature": "lbp_r1_bin8",
+        "original_value": 0.2497,
+        "counterfactual_value": 0.1248,
+        "prob_reduction": 0.11
+      },
+      {
+        "feature": "lbp_r2_bin8",
+        "original_value": 0.235,
+        "counterfactual_value": 0.1175,
+        "prob_reduction": 0.09
+      },
+      {
+        "feature": "lbp_r3_bin8",
+        "original_value": 0.1951,
+        "counterfactual_value": 0.0976,
+        "prob_reduction": 0.12
+      },
+      {
+        "feature": "ela_std",
+        "original_value": 1.3455,
+        "counterfactual_value": 0.6727,
+        "prob_reduction": 0.05
+      },
+      {
+        "feature": "lbp_r2_bin5",
+        "original_value": 0.0217,
+        "counterfactual_value": 0.0108,
+        "prob_reduction": 0.01
+      },
+      {
+        "feature": "grad_canny_dense_med",
+        "original_value": 0.0258,
+        "counterfactual_value": 0.0129,
+        "prob_reduction": 0.0
+      },
+      {
+        "feature": "color_r_std",
+        "original_value": 21.6391,
+        "counterfactual_value": 10.8195,
+        "prob_reduction": 0.01
+      },
+      {
+        "feature": "color_g_std",
+        "original_value": 20.5287,
+        "counterfactual_value": 10.2643,
+        "prob_reduction": 0.0
+      },
+      {
+        "feature": "color_b_std",
+        "original_value": 17.9854,
+        "counterfactual_value": 8.9927,
+        "prob_reduction": 0.01
+      }
+    ],
+    "explanation": "Reducing 9 suspicious anomaly features drops forgery probability from 99.0% to 59.0% (AUTHENTIC)."
+  },
+  "forensic_explanation": {
+    "overall_evidence": "Multiple local texture inconsistency and error-level/compression residual anomaly features provide strong positive evidence for forgery.",
+    "signals_table": [
+      {
+        "feature": "lbp_r2_bin8",
+        "shap_contribution": 0.092965,
+        "shap_formatted": "+0.0930",
+        "observed_value": 0.235,
+        "observed_formatted": "0.2350",
+        "human_readable": "Local texture inconsistency",
+        "category": "Local Texture (LBP)",
+        "detailed": "Micro-texture distribution irregularity (scale R=2, bin 8) capturing paper grain, printer dithering, or patch boundary mismatch.",
+        "direction": "Pushes toward Forged (Positive evidence)"
+      },
+      {
+        "feature": "ela_skew",
+        "shap_contribution": 0.088601,
+        "shap_formatted": "+0.0886",
+        "observed_value": 0.1338,
+        "observed_formatted": "0.1338",
+        "human_readable": "Error-level/compression residual anomaly",
+        "category": "Error Level Analysis (ELA)",
+        "detailed": "JPEG re-compression error discrepancy (residual distribution skewness) indicating multiple save cycles or differential compression.",
+        "direction": "Pushes toward Forged (Positive evidence)"
+      },
+      {
+        "feature": "lbp_r1_bin8",
+        "shap_contribution": 0.082801,
+        "shap_formatted": "+0.0828",
+        "observed_value": 0.2497,
+        "observed_formatted": "0.2497",
+        "human_readable": "Local texture inconsistency",
+        "category": "Local Texture (LBP)",
+        "detailed": "Micro-texture distribution irregularity (scale R=1, bin 8) capturing paper grain, printer dithering, or patch boundary mismatch.",
+        "direction": "Pushes toward Forged (Positive evidence)"
+      },
+      {
+        "feature": "lbp_r3_bin8",
+        "shap_contribution": 0.058827,
+        "shap_formatted": "+0.0588",
+        "observed_value": 0.1951,
+        "observed_formatted": "0.1951",
+        "human_readable": "Local texture inconsistency",
+        "category": "Local Texture (LBP)",
+        "detailed": "Micro-texture distribution irregularity (scale R=3, bin 8) capturing paper grain, printer dithering, or patch boundary mismatch.",
+        "direction": "Pushes toward Forged (Positive evidence)"
+      },
+      {
+        "feature": "lbp_r2_bin9",
+        "shap_contribution": 0.036428,
+        "shap_formatted": "+0.0364",
+        "observed_value": 0.3493,
+        "observed_formatted": "0.3493",
+        "human_readable": "Local texture inconsistency",
+        "category": "Local Texture (LBP)",
+        "detailed": "Micro-texture distribution irregularity (scale R=2, bin 9) capturing paper grain, printer dithering, or patch boundary mismatch.",
+        "direction": "Pushes toward Forged (Positive evidence)"
+      },
+      {
+        "feature": "ela_mean",
+        "shap_contribution": 0.032831,
+        "shap_formatted": "+0.0328",
+        "observed_value": 2.18,
+        "observed_formatted": "2.1800",
+        "human_readable": "Error-level/compression residual anomaly",
+        "category": "Error Level Analysis (ELA)",
+        "detailed": "JPEG re-compression error discrepancy (average residual error) indicating multiple save cycles or differential compression.",
+        "direction": "Pushes toward Forged (Positive evidence)"
+      }
+    ],
+    "overlap_info": {
+      "has_overlap": true,
+      "overlap_ratio": 0.2709,
+      "max_cam_in_box": 0.8479,
+      "mean_cam_in_box": 0.5329,
+      "global_cam_mean": 0.0421,
+      "statement": "The model's strongest visual evidence overlaps the detected suspicious region.",
+      "details": "High-activation Grad-CAM focus coincides directly with the localized tampering cluster (Peak saliency inside region: 0.85 vs canvas background mean: 0.04)."
+    },
+    "forensic_summary": "FORGED because the document exhibits multiple forensic inconsistencies. The strongest contributing signals are local texture anomalies (LBP) and abnormal error-level residual statistics (ELA). The model's strongest visual evidence overlaps the detected suspicious region.",
+    "counterfactual_details": {
+      "active_model_probability": 93.98,
+      "counterfactual_probability_before": 99.0,
+      "counterfactual_probability_after": 59.0,
+      "features_involved_count": 9,
+      "perturbations": [
+        {
+          "feature": "lbp_r1_bin8",
+          "human_readable": "Local texture inconsistency",
+          "original_value": 0.2497,
+          "counterfactual_value": 0.1248,
+          "prob_reduction": 0.11
+        },
+        {
+          "feature": "lbp_r2_bin8",
+          "human_readable": "Local texture inconsistency",
+          "original_value": 0.235,
+          "counterfactual_value": 0.1175,
+          "prob_reduction": 0.09
+        },
+        {
+          "feature": "lbp_r3_bin8",
+          "human_readable": "Local texture inconsistency",
+          "original_value": 0.1951,
+          "counterfactual_value": 0.0976,
+          "prob_reduction": 0.12
+        },
+        {
+          "feature": "ela_std",
+          "human_readable": "Error-level/compression residual anomaly",
+          "original_value": 1.3455,
+          "counterfactual_value": 0.6727,
+          "prob_reduction": 0.05
+        },
+        {
+          "feature": "lbp_r2_bin5",
+          "human_readable": "Local texture inconsistency",
+          "original_value": 0.0217,
+          "counterfactual_value": 0.0108,
+          "prob_reduction": 0.01
+        },
+        {
+          "feature": "grad_canny_dense_med",
+          "human_readable": "Abnormal edge structure",
+          "original_value": 0.0258,
+          "counterfactual_value": 0.0129,
+          "prob_reduction": 0.0
+        },
+        {
+          "feature": "color_r_std",
+          "human_readable": "Local color/intensity inconsistency",
+          "original_value": 21.6391,
+          "counterfactual_value": 10.8195,
+          "prob_reduction": 0.01
+        },
+        {
+          "feature": "color_g_std",
+          "human_readable": "Local color/intensity inconsistency",
+          "original_value": 20.5287,
+          "counterfactual_value": 10.2643,
+          "prob_reduction": 0.0
+        },
+        {
+          "feature": "color_b_std",
+          "human_readable": "Local color/intensity inconsistency",
+          "original_value": 17.9854,
+          "counterfactual_value": 8.9927,
+          "prob_reduction": 0.01
+        }
+      ],
+      "narrative": "Reducing the identified 9 anomalous forensic features moves the prediction from 99.0% to 59.0%, steering the document toward the authentic boundary."
+    },
+    "primary_evidence_items": [
+      "Local texture inconsistency",
+      "Abnormal ELA residual statistics",
+      "Multiple supporting LBP features (4 active signals)",
+      "Evidence concentrated in the detected suspicious region"
+    ],
+    "important_limitation": "Important limitation:\nThis system detects forensic inconsistencies associated with document tampering. It does not independently prove which exact textual field was altered unless supported by additional OCR/content-comparison evidence.",
+    "answers": {
+      "why_verdict": "FORGED because the document exhibits multiple forensic inconsistencies. The strongest contributing signals are local texture anomalies (LBP) and abnormal error-level residual statistics (ELA). The model's strongest visual evidence overlaps the detected suspicious region.",
+      "contributing_characteristics": [
+        {
+          "feature": "lbp_r2_bin8",
+          "shap_contribution": 0.092965,
+          "shap_formatted": "+0.0930",
+          "observed_value": 0.235,
+          "observed_formatted": "0.2350",
+          "human_readable": "Local texture inconsistency",
+          "category": "Local Texture (LBP)",
+          "detailed": "Micro-texture distribution irregularity (scale R=2, bin 8) capturing paper grain, printer dithering, or patch boundary mismatch.",
+          "direction": "Pushes toward Forged (Positive evidence)"
+        },
+        {
+          "feature": "ela_skew",
+          "shap_contribution": 0.088601,
+          "shap_formatted": "+0.0886",
+          "observed_value": 0.1338,
+          "observed_formatted": "0.1338",
+          "human_readable": "Error-level/compression residual anomaly",
+          "category": "Error Level Analysis (ELA)",
+          "detailed": "JPEG re-compression error discrepancy (residual distribution skewness) indicating multiple save cycles or differential compression.",
+          "direction": "Pushes toward Forged (Positive evidence)"
+        },
+        {
+          "feature": "lbp_r1_bin8",
+          "shap_contribution": 0.082801,
+          "shap_formatted": "+0.0828",
+          "observed_value": 0.2497,
+          "observed_formatted": "0.2497",
+          "human_readable": "Local texture inconsistency",
+          "category": "Local Texture (LBP)",
+          "detailed": "Micro-texture distribution irregularity (scale R=1, bin 8) capturing paper grain, printer dithering, or patch boundary mismatch.",
+          "direction": "Pushes toward Forged (Positive evidence)"
+        },
+        {
+          "feature": "lbp_r3_bin8",
+          "shap_contribution": 0.058827,
+          "shap_formatted": "+0.0588",
+          "observed_value": 0.1951,
+          "observed_formatted": "0.1951",
+          "human_readable": "Local texture inconsistency",
+          "category": "Local Texture (LBP)",
+          "detailed": "Micro-texture distribution irregularity (scale R=3, bin 8) capturing paper grain, printer dithering, or patch boundary mismatch.",
+          "direction": "Pushes toward Forged (Positive evidence)"
+        },
+        {
+          "feature": "lbp_r2_bin9",
+          "shap_contribution": 0.036428,
+          "shap_formatted": "+0.0364",
+          "observed_value": 0.3493,
+          "observed_formatted": "0.3493",
+          "human_readable": "Local texture inconsistency",
+          "category": "Local Texture (LBP)",
+          "detailed": "Micro-texture distribution irregularity (scale R=2, bin 9) capturing paper grain, printer dithering, or patch boundary mismatch.",
+          "direction": "Pushes toward Forged (Positive evidence)"
+        },
+        {
+          "feature": "ela_mean",
+          "shap_contribution": 0.032831,
+          "shap_formatted": "+0.0328",
+          "observed_value": 2.18,
+          "observed_formatted": "2.1800",
+          "human_readable": "Error-level/compression residual anomaly",
+          "category": "Error Level Analysis (ELA)",
+          "detailed": "JPEG re-compression error discrepancy (average residual error) indicating multiple save cycles or differential compression.",
+          "direction": "Pushes toward Forged (Positive evidence)"
+        }
+      ],
+      "evidence_location": {
+        "statement": "The model's strongest visual evidence overlaps the detected suspicious region.",
+        "details": "High-activation Grad-CAM focus coincides directly with the localized tampering cluster (Peak saliency inside region: 0.85 vs canvas background mean: 0.04).",
+        "bounding_boxes": [
+          [
+            315,
+            556,
+            110,
+            101
+          ]
+        ],
+        "region_count": 1
+      },
+      "counterfactual_changes": {
+        "active_model_probability": 93.98,
+        "counterfactual_probability_before": 99.0,
+        "counterfactual_probability_after": 59.0,
+        "features_involved_count": 9,
+        "perturbations": [
+          {
+            "feature": "lbp_r1_bin8",
+            "human_readable": "Local texture inconsistency",
+            "original_value": 0.2497,
+            "counterfactual_value": 0.1248,
+            "prob_reduction": 0.11
+          },
+          {
+            "feature": "lbp_r2_bin8",
+            "human_readable": "Local texture inconsistency",
+            "original_value": 0.235,
+            "counterfactual_value": 0.1175,
+            "prob_reduction": 0.09
+          },
+          {
+            "feature": "lbp_r3_bin8",
+            "human_readable": "Local texture inconsistency",
+            "original_value": 0.1951,
+            "counterfactual_value": 0.0976,
+            "prob_reduction": 0.12
+          },
+          {
+            "feature": "ela_std",
+            "human_readable": "Error-level/compression residual anomaly",
+            "original_value": 1.3455,
+            "counterfactual_value": 0.6727,
+            "prob_reduction": 0.05
+          },
+          {
+            "feature": "lbp_r2_bin5",
+            "human_readable": "Local texture inconsistency",
+            "original_value": 0.0217,
+            "counterfactual_value": 0.0108,
+            "prob_reduction": 0.01
+          },
+          {
+            "feature": "grad_canny_dense_med",
+            "human_readable": "Abnormal edge structure",
+            "original_value": 0.0258,
+            "counterfactual_value": 0.0129,
+            "prob_reduction": 0.0
+          },
+          {
+            "feature": "color_r_std",
+            "human_readable": "Local color/intensity inconsistency",
+            "original_value": 21.6391,
+            "counterfactual_value": 10.8195,
+            "prob_reduction": 0.01
+          },
+          {
+            "feature": "color_g_std",
+            "human_readable": "Local color/intensity inconsistency",
+            "original_value": 20.5287,
+            "counterfactual_value": 10.2643,
+            "prob_reduction": 0.0
+          },
+          {
+            "feature": "color_b_std",
+            "human_readable": "Local color/intensity inconsistency",
+            "original_value": 17.9854,
+            "counterfactual_value": 8.9927,
+            "prob_reduction": 0.01
+          }
+        ],
+        "narrative": "Reducing the identified 9 anomalous forensic features moves the prediction from 99.0% to 59.0%, steering the document toward the authentic boundary."
+      },
+      "scope_and_limitations": {
+        "can_conclude": "Physical tampering anomalies, micro-texture discrepancies, and localized compression residual shifts.",
+        "cannot_conclude": "Specific textual or semantic field identity (e.g. which student grade, name, or GPA was altered) without independent OCR verification.",
+        "disclaimer": "Important limitation:\nThis system detects forensic inconsistencies associated with document tampering. It does not independently prove which exact textual field was altered unless supported by additional OCR/content-comparison evidence."
+      }
+    }
+  },
+  "forensic_summary": "FORGED because the document exhibits multiple forensic inconsistencies. The strongest contributing signals are local texture anomalies (LBP) and abnormal error-level residual statistics (ELA). The model's strongest visual evidence overlaps the detected suspicious region.",
+  "overall_evidence": "Multiple local texture inconsistency and error-level/compression residual anomaly features provide strong positive evidence for forgery."
 }

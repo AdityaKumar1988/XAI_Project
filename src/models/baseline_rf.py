@@ -42,17 +42,33 @@ class ForensicFeatureExtractor:
                 names.append(f"color_{ch}_{stat}")
         return names
 
-    def extract_features(self, img_path):
-        """Extracts exact 64-dim feature vector from an image file."""
-        if not os.path.exists(img_path):
-            raise FileNotFoundError(f"Image not found at {img_path}")
+    def extract_features(self, img_input):
+        """Extracts exact 64-dim feature vector from an image file path, PIL Image, or numpy array."""
+        import io
+        if isinstance(img_input, str):
+            if not os.path.exists(img_input):
+                raise FileNotFoundError(f"Image not found at {img_input}")
+            bgr = cv2.imread(img_input)
+            if bgr is None:
+                raise ValueError(f"Failed to load image at {img_input}")
+            rgb = cv2.cvtColor(bgr, cv2.COLOR_BGR2RGB)
+            gray = cv2.cvtColor(bgr, cv2.COLOR_BGR2GRAY)
+            pil_img = Image.fromarray(rgb)
+        elif isinstance(img_input, Image.Image):
+            pil_img = img_input.convert("RGB")
+            rgb = np.array(pil_img)
+            gray = cv2.cvtColor(rgb, cv2.COLOR_RGB2GRAY)
+        elif isinstance(img_input, np.ndarray):
+            if img_input.ndim == 2:
+                gray = img_input
+                rgb = cv2.cvtColor(gray, cv2.COLOR_GRAY2RGB)
+            elif img_input.shape[2] == 3:
+                rgb = img_input
+                gray = cv2.cvtColor(rgb, cv2.COLOR_RGB2GRAY)
+            pil_img = Image.fromarray(rgb)
+        else:
+            raise TypeError(f"Unsupported image input type: {type(img_input)}")
             
-        bgr = cv2.imread(img_path)
-        if bgr is None:
-            raise ValueError(f"Failed to load image at {img_path}")
-        rgb = cv2.cvtColor(bgr, cv2.COLOR_BGR2RGB)
-        gray = cv2.cvtColor(bgr, cv2.COLOR_BGR2GRAY)
-        
         features = []
         
         # 1. Multi-Scale Uniform LBP (P=8, R in [1, 2, 3])
@@ -63,13 +79,11 @@ class ForensicFeatureExtractor:
             
         # 2. Error Level Analysis (ELA) Statistics
         try:
-            pil_img = Image.fromarray(rgb)
-            tmp_path = f"tmp_ela_{os.getpid()}_{np.random.randint(10000)}.jpg"
-            pil_img.save(tmp_path, "JPEG", quality=90)
-            resaved = Image.open(tmp_path)
+            buf = io.BytesIO()
+            pil_img.save(buf, "JPEG", quality=90)
+            buf.seek(0)
+            resaved = Image.open(buf)
             diff = np.array(ImageChops.difference(pil_img, resaved), dtype=np.float32)
-            if os.path.exists(tmp_path):
-                os.remove(tmp_path)
             ela_gray = np.mean(diff, axis=2)
             ela_stats = [
                 float(np.mean(ela_gray)),

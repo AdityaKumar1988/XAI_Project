@@ -1,13 +1,13 @@
 """
 Explainable AI Document Forgery Detection & Forensic Decision Assistant
 Streamlit Research Application featuring:
-- Authenticity Verdict & Calibrated Confidence
-- True Pixel-Level Forgery Localization
+- Authenticity Verdict & Calibrated Confidence (MTDocForensics / Random Forest / MobileNetV2)
+- Ground-Truth Grounded Pixel-Level Forgery Localization
 - Multi-Method Visual Attribution (Grad-CAM, Grad-CAM++, Integrated Gradients, Occlusion)
-- Feature Attribution (SHAP & LIME)
-- Actionable Spatial & Feature Counterfactuals
+- Handcrafted Feature Attribution (TreeSHAP on LBP, ELA, Edge, Color Descriptors)
+- Actionable Spatial & Feature Counterfactual Explanations
 - Case-Based Latent Exemplar Retrieval
-- Live Robustness Stress Testing
+- Live Physical Robustness Stress Testing
 """
 
 import os
@@ -19,9 +19,12 @@ import numpy as np
 import pandas as pd
 from PIL import Image
 import streamlit as st
+import matplotlib.pyplot as plt
 
 # Setup Path
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
+from src.explainability.forensic_pipeline import ForensicInspectionSystem
+from src.explainability.forensic_explainer import map_feature_to_forensic_semantics, generate_forensic_explanation_dossier
 
 # ── Streamlit Config ────────────────────────────────────────────────────────────
 st.set_page_config(
@@ -104,6 +107,14 @@ html, body, .stApp {
 </style>
 """, unsafe_allow_html=True)
 
+# ── Cached Model Loader ────────────────────────────────────────────────────────
+@st.cache_resource
+def get_forensic_inspector():
+    """Initializes and caches the forensic inspection system."""
+    return ForensicInspectionSystem()
+
+inspector = get_forensic_inspector()
+
 # ── Sidebar ────────────────────────────────────────────────────────────────────
 st.sidebar.image("https://img.icons8.com/fluency/96/verified-account.png", width=64)
 st.sidebar.title("DocForensics XAI")
@@ -111,59 +122,54 @@ st.sidebar.caption("Explainable AI Document Forensics System")
 
 # Model Selection
 model_choice = st.sidebar.selectbox(
-    "Active Deep Architecture",
-    ["MT-DocForensics (Classification + Localization)", "ResNet-50", "MobileNetV2 Baseline", "Random Forest"]
+    "Active Architecture",
+    [
+        "MT-DocForensics (Proposed)",
+        "Random Forest Baseline",
+        "MobileNetV2 Baseline"
+    ]
 )
 
 # Document Input Mode
 input_mode = st.sidebar.radio("Document Input Source", ["Upload Document", "Benchmark Sample"])
 
-sample_file = None
-if input_mode == "Benchmark Sample":
-    sample_options = [
-        "Select a document...",
-        "Authentic Result Sheet (doc_001)",
-        "GPA Tampered Certificate (student_doc_002)",
-        "Attendance Altered Transcript (student_doc_010)",
-        "Name Substitution Forgery (student_doc_025)",
-        "Seal Clone Splicing (student_doc_040)"
-    ]
-    selected_sample = st.sidebar.selectbox("Choose Sample", sample_options)
-    
+SAMPLE_MAP = {
+    "Tampered Student Certificate (student_doc_304.png)": "data/processed/images/student_doc_304.png",
+    "Authentic Student Certificate (student_doc_002.png)": "data/processed/images/student_doc_002.png",
+    "Authentic Result Sheet (student_doc_001.png)": "data/processed/images/student_doc_001.png",
+    "Attendance Altered Document (student_doc_010.png)": "data/processed/images/student_doc_010.png",
+    "Candidate Details Tampered (student_doc_025.png)": "data/processed/images/student_doc_025.png",
+}
+
+img_to_analyze = None
+doc_name = None
+
+if input_mode == "Upload Document":
+    uploaded_file = st.sidebar.file_uploader("Upload Document Image (.png, .jpg, .jpeg)", type=["png", "jpg", "jpeg"])
+    if uploaded_file is not None:
+        img_to_analyze = Image.open(uploaded_file).convert("RGB")
+        doc_name = uploaded_file.name
+else:
+    selected_sample = st.sidebar.selectbox("Choose Benchmark Sample", ["Select a document..."] + list(SAMPLE_MAP.keys()))
+    if selected_sample != "Select a document...":
+        sample_path = SAMPLE_MAP[selected_sample]
+        if os.path.exists(sample_path):
+            img_to_analyze = Image.open(sample_path).convert("RGB")
+            doc_name = os.path.basename(sample_path)
+        else:
+            st.sidebar.error(f"Sample not found on disk at {sample_path}")
+
 st.sidebar.markdown("---")
-confidence_threshold = st.sidebar.slider("Decision Uncertainty Threshold", 0.30, 0.70, 0.50, 0.05)
-st.sidebar.info("Documents with prediction probability within +/- 8% of the threshold are routed for **Manual Expert Review**.")
+confidence_threshold = st.sidebar.slider("Decision Threshold", 0.30, 0.70, 0.50, 0.05)
+run_slow_explainers = st.sidebar.checkbox("Compute Slow Visual Explainers (Integrated Gradients & Occlusion)", value=False)
+st.sidebar.info("Decision routing: Documents within +/- 8% of threshold are flagged for manual expert verification.")
 
 # ── Main Header ────────────────────────────────────────────────────────────────
 st.title("Explainable Document Forgery Detection & Localization")
-st.markdown("Multi-task deep learning architecture coupled with game-theoretic and axiomatic decision attribution.")
-
-# File uploader
-uploaded_file = None
-if input_mode == "Upload Document":
-    uploaded_file = st.file_uploader("Upload Document Image (.png, .jpg, .jpeg)", type=["png", "jpg", "jpeg"])
-
-# Determine image to analyze
-img_to_analyze = None
-if uploaded_file is not None:
-    img_to_analyze = Image.open(uploaded_file).convert("RGB")
-    doc_name = uploaded_file.name
-elif input_mode == "Benchmark Sample" and selected_sample != "Select a document...":
-    # Try finding sample image in processed or repo folder
-    img_candidates = [
-        "data/processed/images/student_doc_001.png",
-        "data/processed/images/student_doc_002.png",
-        "Machine-Vision-project-main/Authentic.png",
-        "Machine-Vision-project-main/Fake image.png"
-    ]
-    for c in img_candidates:
-        if os.path.exists(c):
-            img_to_analyze = Image.open(c).convert("RGB")
-            doc_name = os.path.basename(c)
-            break
+st.markdown("Multi-task deep learning architecture coupled with game-theoretic, axiomatic, and counterfactual decision interpretation.")
 
 if img_to_analyze is None:
-    # Landing dashboard overview
+    # ── Landing Dashboard Overview ─────────────────────────────────────────────
     st.info("👋 Upload a document from the sidebar or choose a benchmark sample to initiate the full forensic XAI inspection pipeline.")
     
     col_a, col_b, col_c = st.columns(3)
@@ -171,14 +177,14 @@ if img_to_analyze is None:
         st.markdown("""
         <div class="forensic-card">
             <h4>Dual Detection & Localization</h4>
-            <p style='color: #8b91a7;'>Simultaneously predicts authenticity and pixel-level tampering segmentation masks with Dice supervision.</p>
+            <p style='color: #8b91a7;'>Simultaneously predicts document authenticity and pixel-level tampering segmentation masks with Dice supervision.</p>
         </div>
         """, unsafe_allow_html=True)
     with col_b:
         st.markdown("""
         <div class="forensic-card">
             <h4>Complementary Visual XAI</h4>
-            <p style='color: #8b91a7;'>Grad-CAM, Grad-CAM++, Integrated Gradients, and Occlusion Sensitivity with quantitative faithfulness metrics.</p>
+            <p style='color: #8b91a7;'>Grad-CAM, Grad-CAM++, Integrated Gradients, and Occlusion Sensitivity evaluated with Deletion AUC and Insertion AUC.</p>
         </div>
         """, unsafe_allow_html=True)
     with col_c:
@@ -189,194 +195,466 @@ if img_to_analyze is None:
         </div>
         """, unsafe_allow_html=True)
         
-    # Show pre-computed benchmark metrics table
-    st.markdown("### Published Model Benchmark Results")
-    summary_data = [
-        {"Model Architecture": "Forensic Random Forest", "F1 Score": "0.912", "ROC-AUC": "0.958", "mIoU (Localization)": "N/A", "ECE (Calibration)": "0.048", "Latency (ms)": "14.2"},
-        {"Model Architecture": "MobileNetV2 Baseline", "F1 Score": "0.925", "ROC-AUC": "0.965", "mIoU (Localization)": "N/A", "ECE (Calibration)": "0.052", "Latency (ms)": "6.8"},
-        {"Model Architecture": "ResNet-50", "F1 Score": "0.958", "ROC-AUC": "0.989", "mIoU (Localization)": "N/A", "ECE (Calibration)": "0.034", "Latency (ms)": "12.4"},
-        {"Model Architecture": "MT-DocForensics (Proposed)", "F1 Score": "0.982", "ROC-AUC": "0.996", "mIoU (Localization)": "0.842", "ECE (Calibration)": "0.019", "Latency (ms)": "15.6"}
-    ]
-    st.dataframe(pd.DataFrame(summary_data), use_container_width=True)
-    
+    # Published Benchmark Metrics Table (from outputs/metrics/model_benchmark_comparison.json)
+    st.markdown("### Published Model Benchmark Results (Hold-Out Test Set: N=90)")
+    bench_file = "outputs/metrics/model_benchmark_comparison.json"
+    if os.path.exists(bench_file):
+        with open(bench_file, "r") as f:
+            bench_data = json.load(f)
+        df_bench = pd.DataFrame(bench_data)
+        df_bench["accuracy"] = (df_bench["accuracy"] * 100).round(2).astype(str) + "%"
+        df_bench["precision"] = (df_bench["precision"] * 100).round(2).astype(str) + "%"
+        df_bench["recall"] = (df_bench["recall"] * 100).round(2).astype(str) + "%"
+        df_bench["f1"] = df_bench["f1"].round(4)
+        df_bench["roc_auc"] = df_bench["roc_auc"].round(4)
+        df_bench["pr_auc"] = df_bench["pr_auc"].round(4)
+        df_bench["ece"] = df_bench["ece"].round(4)
+        df_bench["mean_iou"] = df_bench["mean_iou"].apply(lambda v: f"{v:.4f}" if v > 0 else "N/A (Classifier only)")
+        df_bench["mean_dice"] = df_bench["mean_dice"].apply(lambda v: f"{v:.4f}" if v > 0 else "N/A (Classifier only)")
+        df_bench = df_bench.rename(columns={
+            "model": "Model Architecture",
+            "accuracy": "Accuracy",
+            "precision": "Precision",
+            "recall": "Recall",
+            "f1": "F1 Score",
+            "roc_auc": "ROC-AUC",
+            "pr_auc": "PR-AUC",
+            "ece": "Expected Calibration Error (ECE)",
+            "mean_iou": "Localization mIoU",
+            "mean_dice": "Dice Coefficient"
+        })
+        st.dataframe(df_bench, use_container_width=True)
+    else:
+        st.warning("Benchmark metrics file not found at outputs/metrics/model_benchmark_comparison.json.")
+
+    # Published Visual XAI Faithfulness Table (from outputs/metrics/xai_comparison_table.json)
+    st.markdown("### Visual Explainability Faithfulness & Robustness Benchmark")
+    xai_file = "outputs/metrics/xai_comparison_table.json"
+    if os.path.exists(xai_file):
+        with open(xai_file, "r") as f:
+            xai_data = json.load(f)
+        df_xai = pd.DataFrame(xai_data).rename(columns={
+            "method": "Explainability Method",
+            "deletion_auc": "Deletion AUC (Lower = Better)",
+            "insertion_auc": "Insertion AUC (Higher = Better)",
+            "localization_iou": "Localization IoU",
+            "stability_pearson": "Stability (Pearson r)",
+            "gini_sparsity": "Gini Sparsity",
+            "avg_latency_ms": "Latency (ms)"
+        })
+        st.dataframe(df_xai, use_container_width=True)
+
 else:
-    # ── Inspection Execution ───────────────────────────────────────────────────
+    # ── Real Forensic Inspection Pipeline Execution ───────────────────────────
     st.markdown(f"### Forensic Analysis for `{doc_name}`")
     
-    # Run Inspection Pipeline (or simulate on image)
-    with st.spinner("Analyzing document microstructure, deep representations, and XAI attributions..."):
-        time.sleep(0.5)
+    with st.spinner(f"Executing real forensic inference with {model_choice}..."):
+        t0 = time.time()
+        results = inspector.inspect_document(
+            img_to_analyze,
+            model_name=model_choice,
+            run_slow_explainers=run_slow_explainers
+        )
+        elapsed = time.time() - t0
         
-        # Load or compute inspection
-        # For display, resize
-        img_np = np.array(img_to_analyze)
-        h, w = img_np.shape[:2]
+    rep = results["report"]
+    prob_forged = rep["forgery_probability"]
+    confidence = rep["confidence"]
+    decision = rep["decision"]
+    boxes = rep["bounding_boxes"]
+    
+    # Verdict Badges
+    if "FORGED" in decision:
+        status_badge = '<span class="badge-forged">🚨 FORGED / TAMPERED</span>'
+    elif "GENUINE" in decision:
+        status_badge = '<span class="badge-authentic">✅ GENUINE / AUTHENTIC</span>'
+    else:
+        status_badge = '<span class="badge-uncertain">⚠️ UNCERTAIN (MANUAL REVIEW)</span>'
         
-        # Synthetic mock / dynamic fallback when model checkpoint is loading
-        is_demo_fake = ("fake" in doc_name.lower() or "002" in doc_name or "010" in doc_name or "025" in doc_name)
-        prob_forged = 0.942 if is_demo_fake else 0.048
+    # Calibration ECE Lookup
+    if "Random Forest" in model_choice:
+        ece_val = "0.0623 (Low)"
+    elif "MobileNet" in model_choice:
+        ece_val = "0.3381 (Uncalibrated)"
+    else:
+        ece_val = "0.1287 (Calibrated)"
         
-        confidence = prob_forged if prob_forged >= 0.5 else (1.0 - prob_forged)
-        
-        if 0.42 <= prob_forged <= 0.58:
-            status_text = "UNCERTAIN - Manual Review Needed"
-            status_badge = '<span class="badge-uncertain">⚠️ UNCERTAIN (MANUAL REVIEW)</span>'
-        elif prob_forged > 0.58:
-            status_text = "FORGED / TAMPERED"
-            status_badge = '<span class="badge-forged">🚨 FORGED / TAMPERED</span>'
-        else:
-            status_text = "GENUINE / AUTHENTIC"
-            status_badge = '<span class="badge-authentic">✅ GENUINE / AUTHENTIC</span>'
-            
     # Top Status Bar
     col1, col2, col3, col4 = st.columns([2, 1, 1, 1])
     with col1:
         st.markdown(f"**Verification Verdict:**<br>{status_badge}", unsafe_allow_html=True)
     with col2:
-        st.markdown(f"**Confidence:**<br><span class='metric-number'>{confidence*100:.1f}%</span>", unsafe_allow_html=True)
+        st.markdown(f"**Confidence:**<br><span class='metric-number'>{confidence:.1f}%</span>", unsafe_allow_html=True)
     with col3:
         st.markdown(f"**Forged Probability:**<br><span class='metric-number'>{prob_forged*100:.1f}%</span>", unsafe_allow_html=True)
     with col4:
-        st.markdown(f"**Calibration Index:**<br><span class='metric-number' style='color:#00d2aa;'>High (0.019)</span>", unsafe_allow_html=True)
+        st.markdown(f"**Calibration Index:**<br><span class='metric-number' style='color:#00d2aa;'>{ece_val}</span>", unsafe_allow_html=True)
         
+    st.caption(f"Inference latency: {elapsed*1000:.1f} ms | Evaluated on device: `{inspector.device}` | Architecture: `{model_choice}`")
     st.markdown("---")
     
-    # ── Tabbed XAI Interface ───────────────────────────────────────────────────
+    # ── Forensic Evidence Panel: "WHY WAS THIS DOCUMENT FLAGGED?" ─────────────
+    forensic_expl = rep.get("forensic_explanation")
+    if not forensic_expl:
+        forensic_expl = generate_forensic_explanation_dossier(
+            rep, results["gradcam"], results["pred_mask"], orig_shape=results["original_img"].shape[:2]
+        )
+
+    if "FORGED" in decision:
+        panel_title = "🔎 WHY WAS THIS DOCUMENT FLAGGED?"
+    elif "GENUINE" in decision:
+        panel_title = "🔎 WHY WAS THIS DOCUMENT NOT FLAGGED?"
+    else:
+        panel_title = "🔎 FORENSIC VERDICT EXPLANATION"
+
+    st.markdown(f"## {panel_title}")
+
+    # Forensic Evidence Summary Card
+    st.markdown(f"""
+    <div class="forensic-card" style="border-left: 5px solid {'#ff4d6d' if 'FORGED' in decision else '#00d2aa'};">
+        <h4 style="margin-top:0;">📋 Forensic Evidence Summary</h4>
+        <p style="font-size: 1.05rem; line-height: 1.6; margin-bottom: 0;">{forensic_expl['forensic_summary']}</p>
+    </div>
+    """, unsafe_allow_html=True)
+
+    # A. Overall Forensic Evidence
+    st.markdown("### A. Overall Forensic Evidence")
+    st.markdown(f"""
+    <div style="background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.08); padding: 14px 18px; border-radius: 8px; margin-bottom: 20px;">
+        <span style="font-size: 1.02rem; color: #f0f2f8;">{forensic_expl['overall_evidence']}</span>
+    </div>
+    """, unsafe_allow_html=True)
+
+    # B. Top Contributing Forensic Signals (Ranked Table)
+    st.markdown("### B. Top Contributing Forensic Signals")
+    signals_data = forensic_expl.get("signals_table", [])
+    if signals_data:
+        df_signals = pd.DataFrame(signals_data)
+        df_signals_display = pd.DataFrame({
+            "Feature": df_signals["feature"],
+            "SHAP Contribution": df_signals["shap_formatted"],
+            "Observed Value": df_signals["observed_formatted"],
+            "Human-Readable Interpretation": df_signals["human_readable"],
+            "Evidence Direction": df_signals["direction"]
+        })
+        st.dataframe(df_signals_display, use_container_width=True)
+    else:
+        st.info("No tabular forensic features available for attribution.")
+
+    # C. Strongest Evidence Region (Connecting SHAP + Visual XAI + Localization)
+    st.markdown("### C. Strongest Evidence Region")
+    st.caption("Cross-modal verification: Correlating feature-level evidence with spatial localization and gradient saliency.")
+    
+    col_reg1, col_reg2, col_reg3, col_reg4 = st.columns(4)
+    with col_reg1:
+        st.markdown("**Original Document**")
+        st.image(results["original_img"], use_container_width=True)
+        st.caption("Input document canvas")
+    with col_reg2:
+        st.markdown(f"**Localization Box ({len(boxes)} Found)**")
+        st.image(results["annotated_img"], use_container_width=True)
+        st.caption("Pixel tampering bounding box")
+    with col_reg3:
+        st.markdown("**Grad-CAM Saliency**")
+        st.image(results["gradcam_overlay"], use_container_width=True)
+        st.caption("First-order gradient overlay")
+    with col_reg4:
+        st.markdown("**Grad-CAM++ Attribution**")
+        st.image(results["gradcam_pp_overlay"], use_container_width=True)
+        st.caption("Pixel-weighted feature overlay")
+
+    overlap_info = forensic_expl.get("overlap_info", {})
+    st.markdown(f"""
+    <div style="background: rgba(0, 210, 170, 0.08); border-left: 4px solid #00d2aa; padding: 12px 16px; border-radius: 6px; margin-top: 10px; margin-bottom: 20px;">
+        <strong>Cross-Modal Spatial Alignment:</strong> {overlap_info.get('statement', '')}<br>
+        <span style="color: #8b91a7; font-size: 0.9rem;">{overlap_info.get('details', '')}</span>
+    </div>
+    """, unsafe_allow_html=True)
+
+    # D. WHAT WOULD CHANGE THE DECISION? (Counterfactual Explanation)
+    st.markdown("### D. WHAT WOULD CHANGE THE DECISION?")
+    cf_details = forensic_expl.get("counterfactual_details", {})
+    
+    cf_metric1, cf_metric2, cf_metric3, cf_metric4 = st.columns(4)
+    with cf_metric1:
+        st.markdown(f"**Active Model Forgery Prob:**<br><span class='metric-number'>{cf_details.get('active_model_probability', prob_forged*100):.1f}%</span>", unsafe_allow_html=True)
+    with cf_metric2:
+        st.markdown(f"**Feature Model Prob Before:**<br><span class='metric-number'>{cf_details.get('counterfactual_probability_before', prob_forged*100):.1f}%</span>", unsafe_allow_html=True)
+    with cf_metric3:
+        st.markdown(f"**Target Prob After Shift:**<br><span class='metric-number' style='color:#00d2aa;'>{cf_details.get('counterfactual_probability_after', 45.0):.1f}%</span>", unsafe_allow_html=True)
+    with cf_metric4:
+        st.markdown(f"**Anomalous Features Perturbed:**<br><span class='metric-number'>{cf_details.get('features_involved_count', 0)}</span>", unsafe_allow_html=True)
+
+    st.markdown(f"**Counterfactual Mechanism:** {cf_details.get('narrative', '')}")
+
+    if cf_details.get("perturbations"):
+        df_cf = pd.DataFrame(cf_details["perturbations"]).rename(columns={
+            "feature": "Feature",
+            "human_readable": "Forensic Characteristic",
+            "original_value": "Original Value",
+            "counterfactual_value": "Target Value",
+            "prob_reduction": "Probability Delta"
+        })
+        st.dataframe(df_cf, use_container_width=True)
+
+    # E. Distinguish Model Evidence from Document Semantics
+    st.markdown("### E. Model Forensic Evidence vs. Document Semantics")
+    st.markdown("""
+    <div style="background: rgba(245, 158, 11, 0.08); border-left: 4px solid #f59e0b; padding: 14px 18px; border-radius: 8px; margin-bottom: 20px;">
+        <strong style="color: #f59e0b; font-size: 1.05rem;">⚖️ MODEL FORENSIC EVIDENCE vs. SEMANTIC DOCUMENT CONTENT</strong>
+        <p style="color: #cbd5e1; margin-top: 8px; margin-bottom: 6px; font-size: 0.95rem; line-height: 1.5;">
+            The model evaluates <em>low-level physical and signal forensics</em>: micro-texture statistics (LBP), error-level compression residuals (ELA), high-frequency edge gradients, and ink/color channel distributions.
+        </p>
+        <p style="color: #cbd5e1; margin-bottom: 0; font-size: 0.95rem; line-height: 1.5;">
+            <strong>Important distinction:</strong> The model DOES NOT automatically infer semantic alterations (e.g. <em>"student GPA was changed"</em>, <em>"student name was altered"</em>, or <em>"date was modified"</em>) without verified OCR and field-level database comparisons. Localized bounding boxes indicate <strong>WHERE</strong> anomalous signals concentrate, not <strong>WHAT</strong> semantic statement was forged.
+        </p>
+    </div>
+    """, unsafe_allow_html=True)
+
+    # F. Forensic Conclusion
+    st.markdown("### F. FORENSIC CONCLUSION")
+    st.markdown(f"""
+    <div class="forensic-card" style="border: 1px solid rgba(255,255,255,0.15);">
+        <h4 style="margin-top:0; color: {'#ff4d6d' if 'FORGED' in decision else '#00d2aa'};">
+            Classification: {decision} &nbsp;|&nbsp; Confidence: {confidence:.2f}%
+        </h4>
+        <p style="font-weight: 600; margin-bottom: 6px; color: #f0f2f8;">Primary Evidence:</p>
+        <ul style="color: #cbd5e1; margin-top: 0; padding-left: 20px;">
+            {"".join(f'<li style="margin-bottom: 4px;">{item}</li>' for item in forensic_expl.get('primary_evidence_items', []))}
+        </ul>
+        <div style="background: rgba(0,0,0,0.25); border-left: 3px solid #8b91a7; padding: 10px 14px; border-radius: 4px; margin-top: 14px;">
+            <strong style="color: #8b91a7;">Important limitation:</strong><br>
+            <span style="color: #a0aec0; font-size: 0.9rem;">
+                This system detects forensic inconsistencies associated with document tampering. It does not independently prove which exact textual field was altered unless supported by additional OCR/content-comparison evidence.
+            </span>
+        </div>
+    </div>
+    """, unsafe_allow_html=True)
+
+    st.markdown("---")
+    st.markdown("### 🔬 Detailed Technical Diagnostic Tabs")
+    
+    # ── Tabbed Forensic Inspection Interface ──────────────────────────────────
     tab_loc, tab_vis, tab_feat, tab_cf, tab_sim, tab_stress = st.tabs([
         "📍 WHERE? (Localization)",
         "🔥 WHY? (Visual XAI)",
-        "📊 WHICH FEATURES? (SHAP & LIME)",
-        "🔄 WHAT WOULD CHANGE IT? (Counterfactual)",
+        "📊 WHICH FEATURES? (SHAP Attributions)",
+        "🔄 WHAT WOULD CHANGE IT? (Counterfactuals)",
         "🔎 SIMILAR EXAMPLES",
         "⚡ ROBUSTNESS TEST"
     ])
     
-    # Tab 1: Localization
+    # Tab 1: Pixel Localization
     with tab_loc:
         st.subheader("Pixel-Level Forgery Localization")
+        if "MT-DocForensics" not in model_choice:
+            st.info(f"Note: {model_choice} is a whole-image classifier. Localization decoder shown below is powered by the MT-DocForensics FPN segmentation head.")
+            
         c1, c2 = st.columns(2)
         with c1:
-            st.image(img_to_analyze, caption="Original Document", use_column_width=True)
+            st.image(results["original_img"], caption="Original Document Canvas", use_container_width=True)
         with c2:
-            # Generate localization visualization
-            mask_overlay = img_np.copy()
-            if is_demo_fake:
-                # Highlight tampered text bounding box
-                y1, y2 = int(h * 0.62), int(h * 0.70)
-                x1, x2 = int(w * 0.08), int(w * 0.55)
-                cv2.rectangle(mask_overlay, (x1, y1), (x2, y2), (255, 0, 70), 3)
-                cv2.putText(mask_overlay, "SUSPECTED TAMPERING REGION", (x1, y1 - 10),
-                            cv2.FONT_HERSHEY_SIMPLEX, 0.6, (255, 0, 70), 2)
-                st.image(mask_overlay, caption="Localization Head Output (IoU: 0.865)", use_column_width=True)
-                st.success("Target Region: Course Grade / CGPA field indicates local texture and font mismatch.")
-            else:
-                st.image(mask_overlay, caption="Localization Head Output: No Tampering Detected", use_column_width=True)
-                st.info("No suspicious pixel clusters identified across the document canvas.")
-                
-    # Tab 2: Visual XAI
+            st.image(results["annotated_img"], caption=f"Localization Output ({len(boxes)} Tampering Regions Found)", use_container_width=True)
+            
+        if len(boxes) > 0:
+            st.error(f"Detected {len(boxes)} suspicious manipulated region(s):")
+            box_data = []
+            for i, (bx, by, bw, bh) in enumerate(boxes):
+                box_data.append({
+                    "Region #": i + 1,
+                    "X (Left)": bx,
+                    "Y (Top)": by,
+                    "Width": bw,
+                    "Height": bh,
+                    "Area (px)": bw * bh
+                })
+            st.dataframe(pd.DataFrame(box_data), use_container_width=True)
+        else:
+            st.success("No suspicious tampering clusters identified across the document canvas.")
+            
+    # Tab 2: Visual XAI Explanations
     with tab_vis:
         st.subheader("Multi-Method Visual Decision Attributions")
-        st.caption("Compare how different attribution algorithms explain the model's prediction:")
+        st.caption("Side-by-side attribution comparison on model penultimate feature maps:")
         
         v1, v2, v3, v4 = st.columns(4)
-        
-        # Synthetic mock heatmaps for UI visualization
-        gray_img = cv2.cvtColor(img_np, cv2.COLOR_RGB2GRAY)
-        h_map = np.zeros_like(gray_img, dtype=np.float32)
-        if is_demo_fake:
-            y1, y2 = int(h * 0.62), int(h * 0.70)
-            x1, x2 = int(w * 0.08), int(w * 0.55)
-            h_map[y1:y2, x1:x2] = 1.0
-            h_map = cv2.GaussianBlur(h_map, (45, 45), 0)
-            
-        heat_jet = cv2.applyColorMap((h_map * 255).astype(np.uint8), cv2.COLORMAP_JET)
-        heat_jet_rgb = cv2.cvtColor(heat_jet, cv2.COLOR_BGR2RGB)
-        overlay_cam = cv2.addWeighted(img_np, 0.6, heat_jet_rgb, 0.4, 0)
-        
         with v1:
             st.markdown("**1. Grad-CAM**")
-            st.image(overlay_cam, use_column_width=True)
-            st.caption("First-order gradient attribution. Faithfulness Deletion AUC: 0.162")
-            
+            st.image(results["gradcam_overlay"], use_container_width=True)
+            st.caption("Shows image regions contributing to the classification decision.")
         with v2:
             st.markdown("**2. Grad-CAM++**")
-            st.image(overlay_cam, use_column_width=True)
-            st.caption("Higher-order pixel weighted CAM. Localization IoU: 0.824")
-            
+            st.image(results["gradcam_pp_overlay"], use_container_width=True)
+            st.caption("Highlights more localized/multiple discriminative regions.")
         with v3:
             st.markdown("**3. Integrated Gradients**")
-            st.image(heat_jet_rgb, use_column_width=True)
-            st.caption("Axiomatic path integral attribution. Completeness verified.")
-            
+            if run_slow_explainers:
+                st.image(results["integrated_gradients"], clamp=True, use_container_width=True)
+                st.caption("Attributes the prediction to input pixels relative to the baseline.")
+            else:
+                st.info("Disabled for speed. Check 'Compute Slow Visual Explainers' in sidebar to run.")
         with v4:
             st.markdown("**4. Occlusion Sensitivity**")
-            st.image(heat_jet_rgb, use_column_width=True)
-            st.caption("Model-agnostic sliding patch perturbation test.")
-            
-    # Tab 3: SHAP & LIME
+            if run_slow_explainers:
+                st.image(results["occlusion"], clamp=True, use_container_width=True)
+                st.caption("Measures prediction change when image regions are hidden.")
+            else:
+                st.info("Disabled for speed. Check 'Compute Slow Visual Explainers' in sidebar to run.")
+                
+        # Show verified faithfulness comparison table
+        st.markdown("#### Published Attribution Faithfulness Benchmark")
+        xai_file = "outputs/metrics/xai_comparison_table.json"
+        if os.path.exists(xai_file):
+            with open(xai_file, "r") as f:
+                xai_data = json.load(f)
+            df_xai = pd.DataFrame(xai_data)
+            st.dataframe(df_xai, use_container_width=True)
+
+    # Tab 3: SHAP Feature Attributions
     with tab_feat:
-        st.subheader("Forensic Tabular Feature Attributions (SHAP & LIME)")
-        st.caption("Explaining the contribution of engineered texture, edge, and ELA features:")
+        st.subheader("Forensic Tabular Feature Attributions (TreeSHAP)")
+        st.caption("Explaining the contribution of 64 engineered micro-texture, ELA, and edge features:")
         
-        shap_demo = [
-            {"Feature": "ELA Skewness Disparity", "SHAP Value": 0.42, "Direction": "Tampered"},
-            {"Feature": "Local Binary Pattern (R=2, Bin 3)", "SHAP Value": 0.31, "Direction": "Tampered"},
-            {"Feature": "Sobel Gradient Variance", "SHAP Value": 0.24, "Direction": "Tampered"},
-            {"Feature": "Laplacian Blur Inconsistency", "SHAP Value": 0.18, "Direction": "Tampered"},
-            {"Feature": "Color Channel Kurtosis", "SHAP Value": -0.09, "Direction": "Authentic"},
-            {"Feature": "Mean Paper Intensity", "SHAP Value": -0.15, "Direction": "Authentic"}
-        ]
-        df_shap = pd.DataFrame(shap_demo)
-        st.bar_chart(df_shap.set_index("Feature")["SHAP Value"])
-        
-        st.markdown("**Key Finding:** High Error Level Analysis (ELA) skewness and localized LBP micro-texture discrepancies contribute over 65% of the total anomaly score.")
-        
-    # Tab 4: Counterfactual
+        shap_feats = rep.get("top_contributing_features_shap", [])
+        if shap_feats:
+            df_shap = pd.DataFrame(shap_feats)
+            
+            fig, ax = plt.subplots(figsize=(10, 4))
+            fig.patch.set_facecolor('#12151f')
+            ax.set_facecolor('#12151f')
+            
+            y_pos = np.arange(len(df_shap))
+            colors = ['#ff4d6d' if v > 0 else '#00d2aa' for v in df_shap["shap_value"]]
+            
+            ax.barh(y_pos, df_shap["shap_value"], color=colors, align='center')
+            ax.set_yticks(y_pos)
+            ax.set_yticklabels(df_shap["feature"], color='#f0f2f8', fontsize=10)
+            ax.invert_yaxis()
+            ax.tick_params(colors='#f0f2f8')
+            ax.axvline(0, color='#8b91a7', linestyle='--', linewidth=0.8)
+            ax.spines['top'].set_visible(False)
+            ax.spines['right'].set_visible(False)
+            ax.spines['left'].set_color('#8b91a7')
+            ax.spines['bottom'].set_color('#8b91a7')
+            ax.set_xlabel("SHAP Value (Positive = Pushes Forged, Negative = Pushes Authentic)", color='#f0f2f8', fontsize=11)
+            plt.tight_layout()
+            st.pyplot(fig)
+            
+            st.markdown("##### Detailed Feature Values & Attributions")
+            df_shap_display = df_shap.copy()
+            df_shap_display["Human-Readable Interpretation"] = df_shap_display["feature"].apply(
+                lambda fn: map_feature_to_forensic_semantics(fn)["human_readable"]
+            )
+            df_shap_display = df_shap_display.rename(columns={
+                "feature": "Forensic Feature Name",
+                "shap_value": "SHAP Impact",
+                "feature_value": "Observed Value"
+            })
+            display_cols = ["Forensic Feature Name", "SHAP Impact", "Observed Value", "Human-Readable Interpretation"]
+            st.dataframe(df_shap_display[display_cols], use_container_width=True)
+        else:
+            st.info("SHAP explainer was not initialized or no tabular features were extracted.")
+
+    # Tab 4: Counterfactual Explanations
     with tab_cf:
-        st.subheader("Counterfactual Explanation")
-        st.markdown("#### *'What would need to change for the model to classify this as AUTHENTIC?'*")
+        st.subheader("Counterfactual Explanations")
+        st.markdown("#### *'What minimal alterations would shift this document's prediction?'*")
         
         cf_c1, cf_c2 = st.columns(2)
         with cf_c1:
             st.markdown("**Actionable Feature Shifting:**")
-            st.markdown("""
-            1. **Reduce ELA Disparity by 48%:** Harmonize compression artifacts around the CGPA field with the master background.
-            2. **Adjust Font Weight & Anti-Aliasing:** The stroke boundary gradient variance currently exceeds authentic baseline by 3.2x.
-            3. **Decision Boundary Result:** Applying these adjustments reduces $P(\\text{Forged})$ from **94.2%** to **38.5%**, flipping the decision to **AUTHENTIC**.
-            """)
+            feat_cf = rep.get("feature_counterfactual", {})
+            prob_before_cf = feat_cf.get("original_prob", prob_forged)
+            prob_after_cf = feat_cf.get("counterfactual_prob", prob_forged)
+            st.markdown(f"- **Current Active Model Probability:** `{prob_forged*100:.1f}%`")
+            st.markdown(f"- **Feature Model Probability Before:** `{prob_before_cf*100:.1f}%`")
+            st.markdown(f"- **Feature Model Probability After:** `{prob_after_cf*100:.1f}%`")
+            st.write(rep.get("counterfactual_analysis", "N/A"))
+            
+            if feat_cf and feat_cf.get("perturbations"):
+                st.markdown("##### Suggested Feature Adjustments:")
+                df_pert_rows = []
+                for p in feat_cf["perturbations"]:
+                    fn = p.get("feature", "")
+                    interp = map_feature_to_forensic_semantics(fn)["human_readable"]
+                    df_pert_rows.append({
+                        "Feature": fn,
+                        "Forensic Characteristic": interp,
+                        "Current Value": p.get("original_value", 0.0),
+                        "Target Value": p.get("counterfactual_value", 0.0),
+                        "Probability Delta": p.get("prob_reduction", 0.0)
+                    })
+                df_pert = pd.DataFrame(df_pert_rows)
+                st.dataframe(df_pert, use_container_width=True)
+                
         with cf_c2:
             st.markdown("**Spatial Inpainting Counterfactual:**")
-            # Inpainted visualization
-            st.image(img_to_analyze, caption="Synthesized Inpainted Document (Restored to Authentic State)", use_column_width=True)
-            
+            st.image(results["spatial_counterfactual"], caption="Synthesized Counterfactual Canvas (Tampered Regions Inpainted)", use_container_width=True)
+            st.caption("Replacing suspected anomalous pixels with surrounding authentic texture.")
+
     # Tab 5: Similar Exemplars
     with tab_sim:
-        st.subheader("Nearest Latent Space Exemplars")
-        st.caption("Retrieved from training database using cosine similarity on deep penultimate embeddings:")
+        st.subheader("Case-Based Latent Space Exemplars")
+        st.caption("Retrieved from validation benchmark set using cosine similarity on penultimate feature embeddings:")
         
-        ex_c1, ex_c2 = st.columns(2)
-        with ex_c1:
-            st.markdown("### Top Authentic Matches")
-            st.markdown("- **doc_042.png** (Cosine Similarity: `0.924`) — Same university template, authentic GPA.")
-            st.markdown("- **doc_115.png** (Cosine Similarity: `0.891`) — Matching batch and layout structure.")
-        with ex_c2:
-            st.markdown("### Top Forged Matches")
-            st.markdown("- **doc_018_fake1.png** (Cosine Similarity: `0.953`) — Shared CGPA font mismatch tampering.")
-            st.markdown("- **doc_088_fake0.png** (Cosine Similarity: `0.912`) — Spliced numerical grades.")
+        exemplars = results.get("exemplars")
+        if exemplars and isinstance(exemplars, dict):
+            top_auth = exemplars.get("top_authentic", [])
+            top_forg = exemplars.get("top_forged", [])
             
-    # Tab 6: Stress Test
+            ex_c1, ex_c2 = st.columns(2)
+            with ex_c1:
+                st.markdown("### Top Authentic Matches")
+                if top_auth:
+                    for ex in top_auth:
+                        st.markdown(f"- **`{ex['image_name']}`** — Cosine Similarity: `{ex['similarity']:.4f}`")
+                        st.caption(f"Template/Type: `{ex.get('fraud_type', 'none')}`")
+                        if os.path.exists(ex.get("image_path", "")):
+                            st.image(ex["image_path"], width=200)
+                else:
+                    st.info("No authentic exemplars retrieved.")
+                    
+            with ex_c2:
+                st.markdown("### Top Forged Matches")
+                if top_forg:
+                    for ex in top_forg:
+                        st.markdown(f"- **`{ex['image_name']}`** — Cosine Similarity: `{ex['similarity']:.4f}`")
+                        st.caption(f"Fraud Type: `{ex.get('fraud_type', 'none')}`")
+                        if os.path.exists(ex.get("image_path", "")):
+                            st.image(ex["image_path"], width=200)
+                else:
+                    st.info("No forged exemplars retrieved.")
+        else:
+            st.info("Exemplar database is loading or no matches were found.")
+
+    # Tab 6: Live Robustness Stress Test
     with tab_stress:
         st.subheader("Live Robustness Stress Testing")
-        st.caption("Apply real-world degradations to test prediction and XAI stability:")
+        st.caption("Apply real physical degradations and evaluate prediction resilience:")
         
         s_col1, s_col2 = st.columns(2)
         with s_col1:
-            jpeg_q = st.slider("JPEG Compression Quality", 10, 100, 85)
-            blur_k = st.slider("Gaussian Blur Kernel", 1, 15, 1, step=2)
-            noise_amt = st.slider("Additive Gaussian Noise", 0.0, 0.10, 0.0, 0.01)
+            jpeg_q = st.slider("JPEG Compression Quality", 10, 100, 85, key="stress_jpeg")
+            blur_k = st.slider("Gaussian Blur Kernel", 1, 15, 1, step=2, key="stress_blur")
+            noise_amt = st.slider("Additive Gaussian Noise", 0.0, 0.10, 0.0, 0.01, key="stress_noise")
+            
         with s_col2:
-            st.markdown("**Robustness Diagnostics:**")
-            st.markdown(f"- Prediction under current perturbation: **{status_text}**")
-            st.markdown(f"- Confidence Retention: **{(1.0 - noise_amt*0.8)*confidence*100:.1f}%**")
-            st.markdown("- Attribution Stability (Pearson $r$): **0.941**")
-            st.success("Model maintains consistent forgery classification under JPEG compression down to Q=35.")
+            robust_res = inspector.test_robustness(
+                img_to_analyze,
+                jpeg_q=jpeg_q,
+                blur_k=blur_k,
+                noise_amt=noise_amt
+            )
+            
+            pert_prob = robust_res["perturbed_probability"]
+            pert_verdict = robust_res["perturbed_verdict"]
+            pert_conf = robust_res["perturbed_confidence"]
+            
+            st.markdown("**Live Perturbed Diagnostics:**")
+            st.markdown(f"- Perturbed Verdict: **`{pert_verdict}`**")
+            st.markdown(f"- Perturbed Forgery Probability: **{pert_prob*100:.1f}%**")
+            st.markdown(f"- Confidence: **{pert_conf:.1f}%**")
+            delta_p = (pert_prob - prob_forged) * 100
+            st.markdown(f"- Probability Shift: **{delta_p:+.2f}%**")
+            
+        st.image(robust_res["perturbed_image"], caption=f"Perturbed Image Preview (JPEG Q={jpeg_q}, Blur={blur_k}, Noise={noise_amt})", use_container_width=True)
